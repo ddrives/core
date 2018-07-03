@@ -19,7 +19,7 @@
     "@dwcore/dwsc": "dwcore/dwsc#master",
     "@dwcore/dwsd": "dwcore/dwsd#master",
     "@dwcore/dwse": "dwcore/dwse#master",
-    "@dwcore/ref": "dwcore/ref#master",
+    "@dwcore/ref": "*",
     "append-tree": "^2.3.5",
     "inherits": "^2.0.3",
     "mutexify": "^1.1.0",
@@ -29,7 +29,7 @@
     "unixify": "^1.0.0"
   },
   "devDependencies": {
-    "@dwcore/rem": "dwcore/rem#master",
+    "@dwcore/rem": "*",
     "protocol-buffers": "^4.0.2",
     "standard": "^9.0.2",
     "tape": "^4.6.3",
