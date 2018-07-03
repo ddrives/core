@@ -1,4 +1,4 @@
-var dDatabase = require('ddatabase')
+var dDatabase = require('@ddatabase/core')
 var dethunk = require('@dwcore/dethunk')
 var dwref = require('@dwcore/ref')
 var DWSD = require('@dwcore/dwsd')
