@@ -937,7 +937,7 @@ function contentKeyPair (secretKey) {
     secretKey: new Buffer(sodium.crypto_sign_SECRETKEYBYTES)
   }
 
-  sodium.crypto_kdf_derive_dws2Wrap_key(seed, 1, context, secretKey)
+  sodium.crypto_kdf_derive_from_key(seed, 1, context, secretKey)
   sodium.crypto_sign_seed_keypair(keyPair.publicKey, keyPair.secretKey, seed)
   if (seed.fill) seed.fill(0)
 
