@@ -20,10 +20,10 @@ var cursor = require('./lib/cursor')
 var DEFAULT_FMODE = (4 | 2 | 0) << 6 | ((4 | 0 | 0) << 3) | (4 | 0 | 0) // rw-r--r--
 var DEFAULT_DMODE = (4 | 2 | 1) << 6 | ((4 | 0 | 1) << 3) | (4 | 0 | 1) // rwxr-xr-x
 
-module.exports = dDrive
+module.exports = DDrive
 
-function dDrive (storage, key, opts) {
-  if (!(this instanceof dDrive)) return new dDrive(storage, key, opts)
+function DDrive (storage, key, opts) {
+  if (!(this instanceof DDrive)) return new DDrive(storage, key, opts)
   events.EventEmitter.call(this)
 
   if (isObject(key)) {
@@ -101,29 +101,29 @@ function dDrive (storage, key, opts) {
   }
 }
 
-inherits(dDrive, events.EventEmitter)
+inherits(DDrive, events.EventEmitter)
 
-Object.defineProperty(dDrive.prototype, 'version', {
+Object.defineProperty(DDrive.prototype, 'version', {
   enumerable: true,
   get: function () {
     return this._checkout ? this.tree.version : (this.metadata.length ? this.metadata.length - 1 : 0)
   }
 })
 
-Object.defineProperty(dDrive.prototype, 'writable', {
+Object.defineProperty(DDrive.prototype, 'writable', {
   enumerable: true,
   get: function () {
     return this.metadata.writable
   }
 })
 
-dDrive.prototype._oncontent = function () {
+DDrive.prototype._oncontent = function () {
   if (!this.content || this._emittedContent) return
   this._emittedContent = true
   this.emit('content')
 }
 
-dDrive.prototype._trackLatest = function (cb) {
+DDrive.prototype._trackLatest = function (cb) {
   var self = this
 
   this.ready(function (err) {
@@ -177,7 +177,7 @@ dDrive.prototype._trackLatest = function (cb) {
   }
 }
 
-dDrive.prototype._fetchVersion = function (prev, cb) {
+DDrive.prototype._fetchVersion = function (prev, cb) {
   var self = this
   var version = self.version
   var updated = false
@@ -266,7 +266,7 @@ dDrive.prototype._fetchVersion = function (prev, cb) {
   }
 }
 
-dDrive.prototype._clearDangling = function (a, b, cb) {
+DDrive.prototype._clearDangling = function (a, b, cb) {
   var current = this.tree.checkout(a, {cached: true})
   var latest = this.tree.checkout(b)
   var stream = current.diff(latest, {dels: true, puts: false})
@@ -291,7 +291,7 @@ dDrive.prototype._clearDangling = function (a, b, cb) {
   }
 }
 
-dDrive.prototype.replicate = function (opts) {
+DDrive.prototype.replicate = function (opts) {
   if (!opts) opts = {}
 
   opts.expectedDdbs = 2
@@ -313,21 +313,21 @@ dDrive.prototype.replicate = function (opts) {
   return stream
 }
 
-dDrive.prototype.checkout = function (version, opts) {
+DDrive.prototype.checkout = function (version, opts) {
   if (!opts) opts = {}
   opts._checkout = this._checkout || this
   opts.metadata = this.metadata
   opts.version = version
-  return dDrive(null, null, opts)
+  return DDrive(null, null, opts)
 }
 
-dDrive.prototype.createDiffStream = function (version, opts) {
+DDrive.prototype.createDiffStream = function (version, opts) {
   if (!version) version = 0
   if (typeof version === 'number') version = this.checkout(version)
   return this.tree.diff(version.tree, opts)
 }
 
-dDrive.prototype.download = function (dir, cb) {
+DDrive.prototype.download = function (dir, cb) {
   if (typeof dir === 'function') return this.download('/', dir)
 
   var downloadCount = 1
@@ -372,16 +372,16 @@ dDrive.prototype.download = function (dir, cb) {
   }
 }
 
-dDrive.prototype.history = function (opts) {
+DDrive.prototype.history = function (opts) {
   return this.tree.history(opts)
 }
 
-dDrive.prototype.createCursor = function (name, opts) {
+DDrive.prototype.createCursor = function (name, opts) {
   return cursor(this, name, opts)
 }
 
 // open -> fd
-dDrive.prototype.open = function (name, flags, mode, opts, cb) {
+DDrive.prototype.open = function (name, flags, mode, opts, cb) {
   if (typeof mode === 'object' && mode) return this.open(name, flags, 0, mode, opts)
   if (typeof mode === 'function') return this.open(name, flags, 0, mode)
   if (typeof opts === 'function') return this.open(name, flags, mode, null, opts)
@@ -401,7 +401,7 @@ dDrive.prototype.open = function (name, flags, mode, opts, cb) {
   })
 }
 
-dDrive.prototype.read = function (fd, buf, offset, len, pos, cb) {
+DDrive.prototype.read = function (fd, buf, offset, len, pos, cb) {
   var cursor = this._openFiles[fd - 20]
   if (!cursor) return cb(new Error('Bad file descriptor'))
 
@@ -424,7 +424,7 @@ dDrive.prototype.read = function (fd, buf, offset, len, pos, cb) {
 }
 
 // TODO: move to ./lib
-dDrive.prototype.createReadStream = function (name, opts) {
+DDrive.prototype.createReadStream = function (name, opts) {
   if (!opts) opts = {}
 
   name = unixify(name)
@@ -524,7 +524,7 @@ dDrive.prototype.createReadStream = function (name, opts) {
   }
 }
 
-dDrive.prototype.readFile = function (name, opts, cb) {
+DDrive.prototype.readFile = function (name, opts, cb) {
   if (typeof opts === 'function') return this.readFile(name, null, opts)
   if (typeof opts === 'string') opts = {encoding: opts}
   if (!opts) opts = {}
@@ -538,7 +538,7 @@ dDrive.prototype.readFile = function (name, opts, cb) {
   })
 }
 
-dDrive.prototype.createWriteStream = function (name, opts) {
+DDrive.prototype.createWriteStream = function (name, opts) {
   if (!opts) opts = {}
 
   name = unixify(name)
@@ -548,7 +548,7 @@ dDrive.prototype.createWriteStream = function (name, opts) {
 
   // TODO: support piping through a "split" stream like rabin
 
-  proxy.setReadable(false)
+  proxy.setDwReadable(false)
   this._ensureContent(function (err) {
     if (err) return proxy.destroy(err)
     if (self._checkout) return proxy.destroy(new Error('Cannot write to a checkout'))
@@ -580,7 +580,7 @@ dDrive.prototype.createWriteStream = function (name, opts) {
         proxy.on('close', done)
         proxy.on('finish', done)
 
-        proxy.setWritable(stream)
+        proxy.setDwWritable(stream)
         proxy.on('prefinish', function () {
           var st = {
             mode: (opts.mode || DEFAULT_FMODE) | stat.IFREG,
@@ -614,7 +614,7 @@ dDrive.prototype.createWriteStream = function (name, opts) {
   return proxy
 }
 
-dDrive.prototype.writeFile = function (name, buf, opts, cb) {
+DDrive.prototype.writeFile = function (name, buf, opts, cb) {
   if (typeof opts === 'function') return this.writeFile(name, buf, null, opts)
   if (typeof opts === 'string') opts = {encoding: opts}
   if (!opts) opts = {}
@@ -631,7 +631,7 @@ dDrive.prototype.writeFile = function (name, buf, opts, cb) {
   stream.end()
 }
 
-dDrive.prototype.mkdir = function (name, opts, cb) {
+DDrive.prototype.mkdir = function (name, opts, cb) {
   if (typeof opts === 'function') return this.mkdir(name, null, opts)
   if (typeof opts === 'number') opts = {mode: opts}
   if (!opts) opts = {}
@@ -663,7 +663,7 @@ dDrive.prototype.mkdir = function (name, opts, cb) {
   })
 }
 
-dDrive.prototype._statDirectory = function (name, opts, cb) {
+DDrive.prototype._statDirectory = function (name, opts, cb) {
   this.tree.list(name, opts, function (err, list) {
     if (name !== '/' && (err || !list.length)) return cb(err || new Error(name + ' could not be found'))
     var st = stat()
@@ -672,7 +672,7 @@ dDrive.prototype._statDirectory = function (name, opts, cb) {
   })
 }
 
-dDrive.prototype.access = function (name, opts, cb) {
+DDrive.prototype.access = function (name, opts, cb) {
   if (typeof opts === 'function') return this.access(name, null, opts)
   if (!opts) opts = {}
   name = unixify(name)
@@ -681,7 +681,7 @@ dDrive.prototype.access = function (name, opts, cb) {
   })
 }
 
-dDrive.prototype.exists = function (name, opts, cb) {
+DDrive.prototype.exists = function (name, opts, cb) {
   if (typeof opts === 'function') return this.exists(name, null, opts)
   if (!opts) opts = {}
   this.access(name, opts, function (err) {
@@ -689,7 +689,7 @@ dDrive.prototype.exists = function (name, opts, cb) {
   })
 }
 
-dDrive.prototype.lstat = function (name, opts, cb) {
+DDrive.prototype.lstat = function (name, opts, cb) {
   if (typeof opts === 'function') return this.lstat(name, null, opts)
   if (!opts) opts = {}
   var self = this
@@ -702,13 +702,13 @@ dDrive.prototype.lstat = function (name, opts, cb) {
   })
 }
 
-dDrive.prototype.stat = function (name, opts, cb) {
+DDrive.prototype.stat = function (name, opts, cb) {
   if (typeof opts === 'function') return this.stat(name, null, opts)
   if (!opts) opts = {}
   this.lstat(name, opts, cb)
 }
 
-dDrive.prototype.readdir = function (name, opts, cb) {
+DDrive.prototype.readdir = function (name, opts, cb) {
   if (typeof opts === 'function') return this.readdir(name, null, opts)
 
   name = unixify(name)
@@ -717,19 +717,19 @@ dDrive.prototype.readdir = function (name, opts, cb) {
   this.tree.list(name, opts, cb)
 }
 
-dDrive.prototype._readdirRoot = function (opts, cb) {
+DDrive.prototype._readdirRoot = function (opts, cb) {
   this.tree.list('/', opts, function (_, list) {
     if (list) return cb(null, list)
     cb(null, [])
   })
 }
 
-dDrive.prototype.unlink = function (name, cb) {
+DDrive.prototype.unlink = function (name, cb) {
   name = unixify(name)
   this._del(name, cb || noop)
 }
 
-dDrive.prototype.rmdir = function (name, cb) {
+DDrive.prototype.rmdir = function (name, cb) {
   if (!cb) cb = noop
 
   name = unixify(name)
@@ -743,7 +743,7 @@ dDrive.prototype.rmdir = function (name, cb) {
   })
 }
 
-dDrive.prototype._del = function (name, cb) {
+DDrive.prototype._del = function (name, cb) {
   var self = this
 
   this._ensureContent(function (err) {
@@ -768,14 +768,14 @@ dDrive.prototype._del = function (name, cb) {
   })
 }
 
-dDrive.prototype._closeFile = function (fd, cb) {
+DDrive.prototype._closeFile = function (fd, cb) {
   var cursor = this._openFiles[fd - 20]
   if (!cursor) return cb(new Error('Bad file descriptor'))
   this._openFiles[fd - 20] = null
   cursor.close(cb)
 }
 
-dDrive.prototype.close = function (fd, cb) {
+DDrive.prototype.close = function (fd, cb) {
   if (typeof fd === 'number') return this._closeFile(fd, cb || noop)
   else cb = fd
   if (!cb) cb = noop
@@ -790,7 +790,7 @@ dDrive.prototype.close = function (fd, cb) {
   })
 }
 
-dDrive.prototype._ensureContent = function (cb) {
+DDrive.prototype._ensureContent = function (cb) {
   var self = this
 
   this.ready(function (err) {
@@ -800,7 +800,7 @@ dDrive.prototype._ensureContent = function (cb) {
   })
 }
 
-dDrive.prototype._loadIndex = function (cb) {
+DDrive.prototype._loadIndex = function (cb) {
   var self = this
 
   if (this._checkout) this._checkout._loadIndex(done)
@@ -824,7 +824,7 @@ dDrive.prototype._loadIndex = function (cb) {
   }
 }
 
-dDrive.prototype._open = function (cb) {
+DDrive.prototype._open = function (cb) {
   var self = this
 
   this.tree.ready(function (err) {
