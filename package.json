@@ -1,6 +1,6 @@
 {
   "name": "@ddrive/core",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Distributed Drives aka Distributed File Systems - for the dWeb.",
   "contributors": [
     "Jared Rice Sr. <jared@dwebs.io>",
@@ -29,7 +29,7 @@
     "unixify": "^1.0.0"
   },
   "devDependencies": {
-    "@dwcore/rem": "*",
+    "@ddatabase/ddb-rem": "*",
     "protocol-buffers": "^4.0.2",
     "standard": "^9.0.2",
     "tape": "^4.6.3",
