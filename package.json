@@ -1,6 +1,6 @@
 {
   "name": "@ddrive/core",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Distributed Drives aka Distributed File Systems - for the dWeb.",
   "contributors": [
     "Jared Rice Sr. <jared@dwebs.io>",
@@ -13,7 +13,7 @@
     "protobuf": "protocol-buffers schema.proto -o lib/messages.js"
   },
   "dependencies": {
-    "@ddatabase/core": "ddatabase/core#master",
+    "@ddatabase/core": "*",
     "@dwcore/dethunk": "dwcore/dethunk#master",
     "@dwcore/dws2wrap": "dwcore/dws2wrap#master",
     "@dwcore/dwsc": "dwcore/dwsc#master",
