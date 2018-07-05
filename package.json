@@ -1,6 +1,6 @@
 {
   "name": "@ddrive/core",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Distributed Drives aka Distributed File Systems - for the dWeb.",
   "contributors": [
     "Jared Rice Sr. <jared@dwebs.io>",
@@ -14,23 +14,23 @@
   },
   "dependencies": {
     "@ddatabase/core": "*",
-    "@dwcore/dethunk": "dwcore/dethunk#master",
-    "@dwcore/dws2wrap": "dwcore/dws2wrap#master",
-    "@dwcore/dwsc": "dwcore/dwsc#master",
-    "@dwcore/dwsd": "dwcore/dwsd#master",
-    "@dwcore/dwse": "dwcore/dwse#master",
-    "@dwcore/ref": "*",
     "append-tree": "^2.3.5",
+    "duplexify": "^3.5.0",
+    "from2": "^2.3.0",
     "inherits": "^2.0.3",
     "mutexify": "^1.1.0",
     "protocol-buffers-encodings": "^1.1.0",
+    "random-access-file": "^2.0.1",
     "sodium-universal": "^2.0.0",
+    "stream-collector": "^1.0.1",
+    "stream-each": "^1.2.0",
+    "thunky": "^1.0.2",
     "uint64be": "^2.0.1",
     "unixify": "^1.0.0"
   },
   "devDependencies": {
-    "@ddatabase/ddb-rem": "*",
     "protocol-buffers": "^4.0.2",
+    "random-access-memory": "^2.3.0",
     "standard": "^9.0.2",
     "tape": "^4.6.3",
     "temporary-directory": "^1.0.2"
