@@ -3,7 +3,7 @@ var create = require('./helpers/create')
 
 var mask = 511 // 0b111111111
 
-tape('dDrive Core Tests: stat file', function (t) {
+tape('dDrive Core Tests: Stat file', function (t) {
   var vault = create()
 
   vault.writeFile('/foo', 'bar', {mode: 438}, function (err) {
@@ -20,7 +20,7 @@ tape('dDrive Core Tests: stat file', function (t) {
   })
 })
 
-tape('dDrive Core Tests: stat dir', function (t) {
+tape('dDrive Core Tests: Stat dir', function (t) {
   var vault = create()
 
   vault.mkdir('/foo', function (err) {

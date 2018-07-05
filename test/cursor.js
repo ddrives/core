@@ -2,7 +2,7 @@ var tape = require('tape')
 var create = require('./helpers/create')
 var crypto = require('crypto')
 
-tape('dDrive Core Tests: basic cursor', function (t) {
+tape('dDrive Core Tests: Basic cursor', function (t) {
   var drive = create()
   var buf = crypto.randomBytes(100 * 1024)
 
@@ -30,7 +30,7 @@ tape('dDrive Core Tests: basic cursor', function (t) {
   })
 })
 
-tape('dDrive Core Tests: basic cursor bigger', function (t) {
+tape('dDrive Core Tests: Basic cursor bigger', function (t) {
   var drive = create()
   var buf = crypto.randomBytes(1024 * 1024)
 
@@ -58,7 +58,7 @@ tape('dDrive Core Tests: basic cursor bigger', function (t) {
   })
 })
 
-tape('dDrive Core Tests: cursor random access', function (t) {
+tape('dDrive Core Tests: Cursor random access', function (t) {
   var drive = create()
   var buf = crypto.randomBytes(1024 * 1024)
 

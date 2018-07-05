@@ -1,6 +1,6 @@
-var dwrem = require('@dwcore/rem')
+var ram = require('random-access-memory')
 var ddrive = require('../../')
 
 module.exports = function (key, opts) {
-  return ddrive(dwrem, key, opts)
+  return ddrive(ram, key, opts)
 }

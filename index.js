@@ -1,15 +1,15 @@
-var dDatabase = require('@ddatabase/core')
-var dethunk = require('@dwcore/dethunk')
-var dwref = require('@dwcore/ref')
-var DWSD = require('@dwcore/dwsd')
-var dws2Wrap = require('@dwcore/dws2wrap')
-var dwStreamEach = require('@dwcore/dwse')
-var dwStreamCollector = require('@dwcore/dwsc')
+var ddatabase = require('@ddatabase/core')
 var mutexify = require('mutexify')
+var raf = require('random-access-file')
+var thunky = require('thunky')
 var tree = require('append-tree')
+var collect = require('stream-collector')
 var sodium = require('sodium-universal')
 var inherits = require('inherits')
 var events = require('events')
+var duplexify = require('duplexify')
+var from = require('from2')
+var each = require('stream-each')
 var uint64be = require('uint64be')
 var unixify = require('unixify')
 var path = require('path')
@@ -40,9 +40,9 @@ function DDrive (storage, key, opts) {
 
   this._storages = defaultStorage(this, storage, opts)
 
-  this.metadata = opts.metadata || dDatabase(this._storages.metadata, key, {
+  this.metadata = opts.metadata || ddatabase(this._storages.metadata, key, {
     secretKey: opts.secretKey,
-    thin: opts.thinMetadata,
+    sparse: opts.sparseMetadata,
     createIfMissing: opts.createIfMissing,
     storageCacheSize: opts.metadataStorageCacheSize
   })
@@ -58,8 +58,8 @@ function DDrive (storage, key, opts) {
     cacheSize: opts.treeCacheSize
   })
   if (typeof opts.version === 'number') this.tree = this.tree.checkout(opts.version)
-  this.thin = !!opts.thin
-  this.thinMetadata = !!opts.thinMetadata
+  this.sparse = !!opts.sparse
+  this.sparseMetadata = !!opts.sparseMetadata
   this.indexing = !!opts.indexing
   this.contentStorageCacheSize = opts.contentStorageCacheSize
 
@@ -76,7 +76,7 @@ function DDrive (storage, key, opts) {
 
   this.metadata.on('append', update)
   this.metadata.on('error', onerror)
-  this.ready = dethunk(open)
+  this.ready = thunky(open)
   this.ready(onready)
 
   function onready (err) {
@@ -145,7 +145,7 @@ DDrive.prototype._trackLatest = function (cb) {
   }
 
   function fetch () {
-    if (self.thin) {
+    if (self.sparse) {
       if (stableVersion()) return self.metadata.update(loop)
       return loop(null)
     }
@@ -203,7 +203,7 @@ DDrive.prototype._fetchVersion = function (prev, cb) {
 
     // var snapshot = self.checkout(version)
     stream = self.tree.checkout(prev).diff(version, {puts: true, dels: false})
-    dwStreamEach(stream, ondata, ondone)
+    each(stream, ondata, ondone)
   })
 
   function ondata (data, next) {
@@ -281,7 +281,7 @@ DDrive.prototype._clearDangling = function (a, b, cb) {
 
   function oncontent (err) {
     if (err) return cb(err)
-    dwStreamEach(stream, ondata, done)
+    each(stream, ondata, done)
   }
 
   function ondata (data, next) {
@@ -294,7 +294,7 @@ DDrive.prototype._clearDangling = function (a, b, cb) {
 DDrive.prototype.replicate = function (opts) {
   if (!opts) opts = {}
 
-  opts.expectedDdbs = 2
+  opts.expectedFeeds = 2
 
   var self = this
   var stream = this.metadata.replicate(opts)
@@ -438,7 +438,7 @@ DDrive.prototype.createReadStream = function (name, opts) {
   var length = typeof opts.end === 'number' ? 1 + opts.end - (opts.start || 0) : typeof opts.length === 'number' ? opts.length : -1
   var range = null
   var ended = false
-  var stream = dws2Wrap(read)
+  var stream = from(read)
   var cached = opts && !!opts.cached
 
   stream.on('close', cleanup)
@@ -531,7 +531,7 @@ DDrive.prototype.readFile = function (name, opts, cb) {
 
   name = unixify(name)
 
-  dwStreamCollector(this.createReadStream(name, opts), function (err, bufs) {
+  collect(this.createReadStream(name, opts), function (err, bufs) {
     if (err) return cb(err)
     var buf = bufs.length === 1 ? bufs[0] : Buffer.concat(bufs)
     cb(null, opts.encoding && opts.encoding !== 'binary' ? buf.toString(opts.encoding) : buf)
@@ -544,11 +544,11 @@ DDrive.prototype.createWriteStream = function (name, opts) {
   name = unixify(name)
 
   var self = this
-  var proxy = DWSD()
+  var proxy = duplexify()
 
   // TODO: support piping through a "split" stream like rabin
 
-  proxy.setDwReadable(false)
+  proxy.setReadable(false)
   this._ensureContent(function (err) {
     if (err) return proxy.destroy(err)
     if (self._checkout) return proxy.destroy(new Error('Cannot write to a checkout'))
@@ -574,13 +574,13 @@ DDrive.prototype.createWriteStream = function (name, opts) {
 
         self.emit('appending', name, opts)
 
-        // TODO: revert the content ddb if this fails!!!! (add an option to the write stream for this (atomic: true))
+        // TODO: revert the content feed if this fails!!!! (add an option to the write stream for this (atomic: true))
         var stream = self.content.createWriteStream()
 
         proxy.on('close', done)
         proxy.on('finish', done)
 
-        proxy.setDwWritable(stream)
+        proxy.setWritable(stream)
         proxy.on('prefinish', function () {
           var st = {
             mode: (opts.mode || DEFAULT_FMODE) | stat.IFREG,
@@ -812,7 +812,7 @@ DDrive.prototype._loadIndex = function (cb) {
 
     var keyPair = self.metadata.writable && contentKeyPair(self.metadata.secretKey)
     var opts = contentOptions(self, keyPair && keyPair.secretKey)
-    self.content = self._checkout ? self._checkout.content : dDatabase(self._storages.content, index.content, opts)
+    self.content = self._checkout ? self._checkout.content : ddatabase(self._storages.content, index.content, opts)
     self.content.on('error', function (err) {
       self.emit('error', err)
     })
@@ -854,7 +854,7 @@ DDrive.prototype._open = function (cb) {
     if (!self.content) {
       var keyPair = contentKeyPair(self.metadata.secretKey)
       var opts = contentOptions(self, keyPair.secretKey)
-      self.content = dDatabase(self._storages.content, keyPair.publicKey, opts)
+      self.content = ddatabase(self._storages.content, keyPair.publicKey, opts)
       self.content.on('error', function (err) {
         self.emit('error', err)
       })
@@ -862,14 +862,14 @@ DDrive.prototype._open = function (cb) {
 
     self.content.ready(function () {
       if (self.metadata.has(0)) return cb(new Error('Index already written'))
-      self.metadata.append(messages.Index.encode({type: '@ddrive/core', content: self.content.key}), cb)
+      self.metadata.append(messages.Index.encode({type: 'hyperdrive', content: self.content.key}), cb)
     })
   }
 }
 
 function contentOptions (self, secretKey) {
   return {
-    thin: self.thin || self.latest,
+    sparse: self.sparse || self.latest,
     maxRequests: self.maxRequests,
     secretKey: secretKey,
     storeSecretKey: false,
@@ -900,7 +900,7 @@ function defaultStorage (self, storage, opts) {
 
   if (typeof storage === 'string') {
     folder = storage
-    storage = dwref
+    storage = raf
   }
 
   return {
@@ -931,7 +931,7 @@ function getTime (date) {
 
 function contentKeyPair (secretKey) {
   var seed = new Buffer(sodium.crypto_sign_SEEDBYTES)
-  var context = new Buffer('ddrivebb') // 8 byte context
+  var context = new Buffer('hyperdri') // 8 byte context
   var keyPair = {
     publicKey: new Buffer(sodium.crypto_sign_PUBLICKEYBYTES),
     secretKey: new Buffer(sodium.crypto_sign_SECRETKEYBYTES)

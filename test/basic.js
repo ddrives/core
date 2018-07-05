@@ -2,7 +2,7 @@ var tape = require('tape')
 var sodium = require('sodium-universal')
 var create = require('./helpers/create')
 
-tape('dDrive Core Tests: write and read', function (t) {
+tape('dDrive Core Tests: Write and read', function (t) {
   var vault = create()
 
   vault.writeFile('/hello.txt', 'world', function (err) {
@@ -15,7 +15,7 @@ tape('dDrive Core Tests: write and read', function (t) {
   })
 })
 
-tape('dDrive Core Tests: write and read (2 parallel)', function (t) {
+tape('dDrive Core Tests: Write and read (2 parallel)', function (t) {
   t.plan(6)
 
   var vault = create()
@@ -37,19 +37,19 @@ tape('dDrive Core Tests: write and read (2 parallel)', function (t) {
   })
 })
 
-tape('dDrive Core Tests: write and read (thin)', function (t) {
+tape('dDrive Core Tests: Write and read (sparse)', function (t) {
   t.plan(2)
 
   var vault = create()
   vault.on('ready', function () {
-    var fork = create(vault.key, {thin: true})
+    var clone = create(vault.key, {sparse: true})
 
     vault.writeFile('/hello.txt', 'world', function (err) {
       t.error(err, 'no error')
-      var stream = fork.replicate()
+      var stream = clone.replicate()
       stream.pipe(vault.replicate()).pipe(stream)
 
-      var readStream = fork.createReadStream('/hello.txt')
+      var readStream = clone.createReadStream('/hello.txt')
       readStream.on('data', function (data) {
         t.same(data.toString(), 'world')
       })
@@ -57,7 +57,7 @@ tape('dDrive Core Tests: write and read (thin)', function (t) {
   })
 })
 
-tape('dDrive Core Tests: write and unlink', function (t) {
+tape('dDrive Core Tests: Write and unlink', function (t) {
   var vault = create()
 
   vault.writeFile('/hello.txt', 'world', function (err) {
@@ -72,7 +72,7 @@ tape('dDrive Core Tests: write and unlink', function (t) {
   })
 })
 
-tape('dDrive Core Tests: root is always there', function (t) {
+tape('dDrive Core Tests: Root is always there', function (t) {
   var vault = create()
 
   vault.access('/', function (err) {
@@ -85,7 +85,7 @@ tape('dDrive Core Tests: root is always there', function (t) {
   })
 })
 
-tape('dDrive Core Tests: owner is writable', function (t) {
+tape('dDrive Core Tests: Owner is writable', function (t) {
   var vault = create()
 
   vault.on('ready', function () {
@@ -96,7 +96,7 @@ tape('dDrive Core Tests: owner is writable', function (t) {
   })
 })
 
-tape('dDrive Core Tests: provide keypair', function (t) {
+tape('dDrive Core Tests: Provide keypair', function (t) {
   var publicKey = new Buffer(sodium.crypto_sign_PUBLICKEYBYTES)
   var secretKey = new Buffer(sodium.crypto_sign_SECRETKEYBYTES)
 
@@ -121,7 +121,7 @@ tape('dDrive Core Tests: provide keypair', function (t) {
   })
 })
 
-tape('dDrive Core Tests: download a version', function (t) {
+tape('dDrive Core Tests: Download a version', function (t) {
   var src = create()
   src.on('ready', function () {
     t.ok(src.writable)
@@ -141,27 +141,27 @@ tape('dDrive Core Tests: download a version', function (t) {
   })
 
   function testDownloadVersion () {
-    var fork = create(src.key, { thin: true })
-    fork.on('content', function () {
-      t.same(fork.version, 3)
-      fork.checkout(2).download(function (err) {
+    var clone = create(src.key, { sparse: true })
+    clone.on('content', function () {
+      t.same(clone.version, 3)
+      clone.checkout(2).download(function (err) {
         t.error(err)
-        fork.readFile('/second.txt', { cached: true }, function (err, content) {
+        clone.readFile('/second.txt', { cached: true }, function (err, content) {
           t.error(err, 'block not downloaded')
           t.same(content && content.toString(), 'number 2', 'content does not match')
-          fork.readFile('/third.txt', { cached: true }, function (err, content) {
+          clone.readFile('/third.txt', { cached: true }, function (err, content) {
             t.same(err && err.message, 'Block not downloaded')
             t.end()
           })
         })
       })
     })
-    var stream = fork.replicate()
+    var stream = clone.replicate()
     stream.pipe(src.replicate()).pipe(stream)
   }
 })
 
-tape('dDrive Core Tests: write and read, no cache', function (t) {
+tape('dDrive Core Tests: Write and read, no cache', function (t) {
   var vault = create({
     metadataStorageCacheSize: 0,
     contentStorageCacheSize: 0,

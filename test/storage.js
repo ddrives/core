@@ -1,9 +1,10 @@
+
 var tape = require('tape')
 var tmp = require('temporary-directory')
 var create = require('./helpers/create')
 var ddrive = require('..')
 
-tape('dDrive Core Tests: dwRem storage', function (t) {
+tape('dDrive Core Tests: Ram storage', function (t) {
   var vault = create()
 
   vault.ready(function () {
@@ -13,7 +14,7 @@ tape('dDrive Core Tests: dwRem storage', function (t) {
   })
 })
 
-tape('dDrive Core Tests: dir storage with resume', function (t) {
+tape('dDrive Core Tests: Dir storage with resume', function (t) {
   tmp(function (err, dir, cleanup) {
     t.ifError(err)
     var vault = ddrive(dir)
@@ -40,30 +41,30 @@ tape('dDrive Core Tests: dir storage with resume', function (t) {
   })
 })
 
-tape('dDrive Core Tests: dir storage for non-writable vault', function (t) {
+tape('dDrive Core Tests: Dir storage for non-writable vault', function (t) {
   var src = create()
   src.ready(function () {
     tmp(function (err, dir, cleanup) {
       t.ifError(err)
 
-      var fork = ddrive(dir, src.key)
-      fork.on('content', function () {
-        t.ok(!fork.metadata.writable, 'fork metadata not writable')
-        t.ok(!fork.content.writable, 'fork content not writable')
-        t.same(fork.key, src.key, 'keys match')
+      var clone = ddrive(dir, src.key)
+      clone.on('content', function () {
+        t.ok(!clone.metadata.writable, 'clone metadata not writable')
+        t.ok(!clone.content.writable, 'clone content not writable')
+        t.same(clone.key, src.key, 'keys match')
         cleanup(function (err) {
           t.ifError(err)
           t.end()
         })
       })
 
-      var stream = fork.replicate()
+      var stream = clone.replicate()
       stream.pipe(src.replicate()).pipe(stream)
     })
   })
 })
 
-tape('dDrive Core Tests: dir storage without permissions emits error', function (t) {
+tape('dDrive Core Tests: Dir storage without permissions emits error', function (t) {
   t.plan(1)
   var vault = ddrive('/')
   vault.on('error', function (err) {
@@ -71,20 +72,20 @@ tape('dDrive Core Tests: dir storage without permissions emits error', function 
   })
 })
 
-tape('dDrive Core Tests: write and read (thin)', function (t) {
+tape('dDrive Core Tests: Write and read (sparse)', function (t) {
   t.plan(3)
 
   tmp(function (err, dir, cleanup) {
     t.ifError(err)
     var vault = ddrive(dir)
     vault.on('ready', function () {
-      var fork = create(vault.key, {thin: true})
-      fork.on('ready', function () {
+      var clone = create(vault.key, {sparse: true})
+      clone.on('ready', function () {
         vault.writeFile('/hello.txt', 'world', function (err) {
           t.error(err, 'no error')
-          var stream = fork.replicate()
+          var stream = clone.replicate()
           stream.pipe(vault.replicate()).pipe(stream)
-          var readStream = fork.createReadStream('/hello.txt')
+          var readStream = clone.createReadStream('/hello.txt')
           readStream.on('error', function (err) {
             t.error(err, 'no error')
           })
@@ -97,31 +98,31 @@ tape('dDrive Core Tests: write and read (thin)', function (t) {
   })
 })
 
-tape('dDrive Core Tests: thin read/write two files', function (t) {
+tape('dDrive Core Tests: Sparse read/write two files', function (t) {
   var vault = create()
   vault.on('ready', function () {
-    var fork = create(vault.key, {thin: true})
+    var clone = create(vault.key, {sparse: true})
     vault.writeFile('/hello.txt', 'world', function (err) {
       t.error(err, 'no error')
       vault.writeFile('/hello2.txt', 'world', function (err) {
         t.error(err, 'no error')
-        var stream = fork.replicate()
+        var stream = clone.replicate()
         stream.pipe(vault.replicate()).pipe(stream)
-        fork.metadata.update(start)
+        clone.metadata.update(start)
       })
     })
 
     function start () {
-      fork.stat('/hello.txt', function (err, stat) {
+      clone.stat('/hello.txt', function (err, stat) {
         t.error(err, 'no error')
         t.ok(stat, 'has stat')
-        fork.readFile('/hello.txt', function (err, data) {
+        clone.readFile('/hello.txt', function (err, data) {
           t.error(err, 'no error')
           t.same(data.toString(), 'world', 'data ok')
-          fork.stat('/hello2.txt', function (err, stat) {
+          clone.stat('/hello2.txt', function (err, stat) {
             t.error(err, 'no error')
             t.ok(stat, 'has stat')
-            fork.readFile('/hello2.txt', function (err, data) {
+            clone.readFile('/hello2.txt', function (err, data) {
               t.error(err, 'no error')
               t.same(data.toString(), 'world', 'data ok')
               t.end()
