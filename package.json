@@ -1,6 +1,6 @@
 {
   "name": "@ddrive/core",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Distributed Drives aka Distributed File Systems - for the dWeb.",
   "contributors": [
     "Jared Rice Sr. <jared@dwebs.io>",
