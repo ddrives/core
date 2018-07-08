@@ -862,7 +862,7 @@ DDrive.prototype._open = function (cb) {
 
     self.content.ready(function () {
       if (self.metadata.has(0)) return cb(new Error('Index already written'))
-      self.metadata.append(messages.Index.encode({type: 'hyperdrive', content: self.content.key}), cb)
+      self.metadata.append(messages.Index.encode({type: 'ddrive', content: self.content.key}), cb)
     })
   }
 }
